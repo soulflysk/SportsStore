@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using SportsStore.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 
 namespace SportsStore
 {
@@ -27,7 +28,19 @@ namespace SportsStore
         {
             services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
-            Configuration["Data:SportStoreProducts:ConnectionString"]));
+            Configuration["Data:SportStoreProducts:ConnectionString"],
+            sqlServerOptionsAction: sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure();
+            }));
+
+            services.AddDbContext<AppIdentityDbContext>(options =>
+ options.UseSqlServer(
+ Configuration["Data:SportStoreIdentity:ConnectionString"]));
+            services.AddIdentity<IdentityUser, IdentityRole>()
+            .AddEntityFrameworkStores<AppIdentityDbContext>()
+            .AddDefaultTokenProviders();
+
             services.AddTransient<IProductRepository, EFProductRepository>();
             services.AddControllersWithViews();
 
@@ -48,11 +61,11 @@ namespace SportsStore
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
+                app.UseExceptionHandler("/Error");
             }
             app.UseStaticFiles();
             app.UseSession();
-
+            app.UseAuthentication();
             app.UseRouting();
 
             app.UseAuthorization();
@@ -63,7 +76,8 @@ namespace SportsStore
                     name: "default",
                     pattern: "{controller=Product}/{action=List}/{id?}");
             });
-            SeedData.EnsurePopulated(app);
+            //SeedData.EnsurePopulated(app);
+            //IdentitySeedData.EnsurePopulated(app);
         }
     }
 }
